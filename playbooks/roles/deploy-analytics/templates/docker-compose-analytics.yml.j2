@@ -18,6 +18,8 @@ services:
 
   matomo:
     image: "matomo:{{ matomo_version }}"
+    ports:
+      - "7000:80"
     depends_on:
       - mariadb
     volumes:
