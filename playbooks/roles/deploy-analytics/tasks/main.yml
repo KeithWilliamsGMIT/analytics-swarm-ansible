@@ -1,0 +1,49 @@
+---
+- name: Install required python modules for Docker
+  pip:
+    name: "{{ item.name }}"
+    state: present
+  with_items:
+  - { name: jsondiff }
+
+- name: Install required python modules for Docker (with specific versions)
+  pip:
+    name: "{{ item.name }}"
+    version: "{{ item.version }}"
+    state: present
+  with_items:
+  - { name: docker-py, version: 1.10.6 }
+
+- name: Create an overlay network
+  docker_network:
+    name: '{{ docker_network_name }}'
+    driver: overlay
+    state: present
+
+- name: Remove analytics stack
+  docker_stack:
+    name: analytics
+    state: absent
+
+- name: Create directories for analytics stack
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+  with_items:
+    - '{{ volume_directory }}/analytics/mariadb'
+    - '{{ volume_directory }}/analytics/matomo/config'
+    - '{{ volume_directory }}/analytics/matomo/logs'
+
+- name: Write out docker-compose-analytics.yml template
+  template:
+    src: docker-compose-analytics.yml.j2
+    dest: '{{ temporary_directory }}/docker-compose-analytics.yml'
+
+- name: Deploy analytics stack swarm
+  docker_stack:
+    state: present
+    name: analytics
+    compose:
+      - "{{ temporary_directory }}/docker-compose-analytics.yml"
+    with_registry_auth: yes

@@ -1,0 +1,18 @@
+# Directories
+temporary_directory: "/tmp"
+volume_directory: "/tmp"
+
+# Domain
+domain_name: example.local
+
+# Docker
+docker_network_name: "analytics_network"
+
+# Docker image versions
+mariadb_version: "latest"
+matomo_version: "latest"
+
+# Database
+analytics_database_name: matomo
+analytics_database_username: matomo
+analytics_database_password: password

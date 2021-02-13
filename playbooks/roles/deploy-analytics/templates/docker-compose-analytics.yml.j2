@@ -1,0 +1,48 @@
+version: '3.6'
+services:
+  mariadb:
+    image: "mariadb:{{ mariadb_version }}"
+    command: --max-allowed-packet=64MB
+    volumes:
+      - "{{ volume_directory }}/analytics/mariadb:/var/lib/mysql"
+    environment:
+      - MYSQL_DATABASE={{ analytics_database_name }}
+      - MYSQL_USER={{ analytics_database_username }}
+      - MYSQL_PASSWORD={{ analytics_database_password }}
+      - MYSQL_ROOT_PASSWORD=password
+    deploy:
+      mode: replicated
+      replicas: 1
+    networks:
+      - {{ docker_network_name }}
+
+  matomo:
+    image: "matomo:{{ matomo_version }}"
+    depends_on:
+      - mariadb
+    volumes:
+      - "{{ volume_directory }}/analytics/matomo/config:/var/www/html/config:rw"
+      - "{{ volume_directory }}/analytics/matomo/logs:/var/www/html/logs"
+      - "{{ volume_directory }}/analytics/matomo:/var/www/html"
+    environment:
+      - MATOMO_DATABASE_HOST=mariadb
+      - MATOMO_DATABASE_ADAPTER=mysql
+      - MATOMO_DATABASE_TABLES_PREFIX=matomo_
+      - MATOMO_DATABASE_DBNAME={{ analytics_database_name }}
+      - MATOMO_DATABASE_USERNAME={{ analytics_database_username }}
+      - MATOMO_DATABASE_PASSWORD={{ analytics_database_password }}
+    deploy:
+      labels:
+        - "traefik.port=80"
+        - "traefik.backend=matomo"
+        - "traefik.frontend.rule=Host:matomo.analytics.{{ domain_name }}"
+        - "traefik.docker.network={{ docker_network_name }}"
+      mode: replicated
+      replicas: 1
+    networks:
+      - {{ docker_network_name }}
+
+networks:
+  {{ docker_network_name }}:
+    external: true
+    name: {{ docker_network_name }}
